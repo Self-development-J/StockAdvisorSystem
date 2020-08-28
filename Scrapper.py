@@ -3,138 +3,189 @@
 
 import sys
 import requests
+import socket
+import time
+
 from bs4 import BeautifulSoup
 
+# User custom ExceptionClass list
+# return Exception code
+#####################################################
+class NotFoundExcpetion(Exception):                 # Exception code : CASE_NOT_FOUND
+    def __init__(self):                             #
+        super().__init__("주소를 찾을수 없습니다. ")  #
+                                                    # network connect failure : CASE_CONNECT_FAILED
+                                                    #
+#####################################################
 def getURL(sig, code_num):
+    pageNews =          "https://finance.naver.com" + "/news/"
+    pageMainPrice =     "https://finance.naver.com/item/sise.nhn?code=" + code_num      # main page
 
-    naver_main =    "https://finance.naver.com"                             # main page
-    naver_news =    naver_main + "/news/"
-    
-    defineAddress = "https://navercomp.wisereport.co.kr/company/"           # online company info site
-    page1 =         defineAddress + "c1010001.aspx?cmp_cd=" + code_num      
-    page2 =         defineAddress + "c1020002.aspx?cmp_cd=" + code_num
-    page3 =         defineAddress + "c1030002.aspx?cmp_cd=" + code_num
-    page4 =         defineAddress + "c1040002.aspx?cmp_cd=" + code_num
-    page5 =         defineAddress + "c1050002.aspx?cmp_cd=" + code_num
-    page6 =         defineAddress + "c1060002.aspx?cmp_cd=" + code_num
-    page7 =         defineAddress + "c1070002.aspx?cmp_cd=" + code_num
-    
+    defineAddress =             "https://navercomp.wisereport.co.kr/company/"       # online company info site
+    pageCompanyStatus =         defineAddress + "c1010001.aspx?cmp_cd=" + code_num
+    pageCompanyOverview =       defineAddress + "c1020001.aspx?cmp_cd=" + code_num
+    pageFinancialanalysis =     defineAddress + "c1030001.aspx?cmp_cd=" + code_num
+    pageInvestmentIndicator =   defineAddress + "c1040001.aspx?cmp_cd=" + code_num
+    pageConsensus =             defineAddress + "c1050001.aspx?cmp_cd=" + code_num
+    pageIndustryAnalysis =      defineAddress + "c1060001.aspx?cmp_cd=" + code_num
+    pageSectorAnalysis =        defineAddress + "c1090001.aspx?cmp_cd=" + code_num
+    pageEquitystatus =          defineAddress + "c1070001.aspx?cmp_cd=" + code_num
+
     try:
         if (sig == 1):
-            return naver_item
+            return pageCompanyStatus
         elif (sig == 2):
-            return naver_item
+            return pageCompanyOverview
         elif (sig == 3):
-            return naver_item
+            return pageFinancialanalysis
         elif (sig == 4):
-            return naver_item
+            return pageInvestmentIndicator
         elif (sig == 5):
-            return naver_item
+            return pageConsensus
         elif (sig == 6):
-            return naver_item
-        elif (sig == 11):
-            return naver_news
+            return pageIndustryAnalysis
+        elif (sig == 7):
+            return pageSectorAnalysis
+        elif (sig == 8):
+            return pageEquitystatus
+        elif (sig == 9):
+            return pageMainPrice
+        elif (sig == 10):
+            return pageNews
         else:
-            raise NotFoundExcpetion("주소를 가져오는데 실패했습니다. 에러처리를 시작합니다..")
+            raise NotFoundExcpetion
+
     except NotFoundExcpetion as e:
         send = "CASE_NOT_FOUND"
         print("오류 발생.", e)
         return send
-        
-class crawling():
+
+class URLcrawlingInfoObject:                                   # object for crawling work
     def __init__(self, url):
         super().__init__()
-        targetURLCrawl = requests.get(url)
-        soup = BeautifulSoup(targetURLCrawl.content, "html.parser")
-            
-    def crawlingmainStockInfo(url):
+        self.settingCrawlingModule(url)
+
+    def settingCrawlingModule(self, url):                      # create soup object here
+        try:
+            targetURLCrawl =    requests.get(url, timeout=5)
+            soup =              BeautifulSoup(targetURLCrawl.content, "html.parser")
+            self.code = soup
+        except requests.HTTPError as e:                        # I need to check the connecting network
+            print("오류 발생", e)
+            self.code = "CASE_CONNECT_FAILED"                  # when the newtwork connection failed, return use database load signal
+
+    # 딕셔너리 형식으로 리턴
+    def crawlingmainStockInfo(self, bs):                       # 메인테이블
+        list_th =           bs.find_all("th", {'class':'title'})
+        list_strong =       bs.find_all("strong", {'class':'tah p11'})
+        list_span =         bs.find_all("span", {'class':'tah p11'})
+        ch = bs.find_all("span", {'class':'blind'})            # 상승, 하락에 따라 처리를 바꿔야 하기에 그에 필요한 구별용 변수 ch를 선언함
+        if ch[22].get_text() == "상승":
+            list_span_01 =  bs.find_all("span", {'class':'tah p11 red01'})
+        elif ch[22].get_text() == "하락":
+            list_span_01 =  bs.find_all("span", {'class':'tah p11 nv01'})
+        list_span_t =       bs.find_all("span",{'class':'p11'})
+
+        result_th = []                                         # final list
+        result_strong = []
+        result_span_01 = []
+        result_span = []
+        result_span_t = []
+
+        for i in list_th:                                      # 데이터 추출
+            result_th.append(i.get_text().strip())
+
+        for j in list_strong:
+            result_strong.append(j.get_text().strip())
+
+        for k in list_span_01:
+            result_span_01.append(k.get_text().strip())
+            if len(result_span_01) == 2:  # 인덱스[1] 뒤의 값들을 쓸 일이 없기 때문에 리스트에 포함시키지 않음
+                break;
+
+        for l in list_span:
+            result_span.append(l.get_text().strip())
+
+        m = 19
+        for m in range(19, len(list_span_t)):
+            result_span_t.append(list_span_t[m].get_text().strip())
+            if m == (19 + 3):
+                break;
+            m += 1
+
+        result_th = list(filter(None, result_th))
+        result_strong = list(filter(None, result_strong))
+        result_span_01 = list(filter(None, result_span_01))
+        result_span = list(filter(None, result_span))
+        result_span_t = list(filter(None, result_span_t))
+
+        res_dict = {'r1':result_th,
+                    'r2':result_strong,
+                    'r3':result_span_01,
+                    'r4':result_span,
+                    'r5':result_span_t}
+
+        return res_dict
+
+    def crawlingCompanyStatus(self, bs):        # 기업현황
         pass
-    
-    def crawlingCompanyStatus(url):
+
+    def crawlingCompanyOverview(self, bs):      # 기업개요
         pass
-    
-    def crawlingCompanyOverview(url):
+
+    def crawlingFinancialanalysis(self, bs):    # 재무분석
         pass
-    
-    def crawlingFinancialanalysis(url):
+
+    def crawlingInvestmentIndicator(self, bs):  # 투자지표
         pass
-    
-    def crawlingInvestmentIndicator(url):
+
+    def crawlingConsensus(self, bs):            # 컨센서스
         pass
-    
-    def crawlingConsensus(url):
+
+    def crawlingIndustryAnalysis(self, bs):     # 업종분석
         pass
-    
-    def crawlingIndustryAnalysis(url):
+
+    def crawlingSectorAnalysis(self, bs):       # 섹터분석
         pass
-    
-    def crawlingSectorAnalysis(url):
+
+    def crawlingEquitystatus(self, bs):         # 지분현황
         pass
-    
-    def crawlingItem(url):
-        pass
-    
 
 if __name__ == '__main__':
-    i = 0
-    
-    while True:
-        print("디버그 코드 입력 : ", end = " ")
-        sig = input()
-        
-        if(sig != "6ATZTGMS8"):
-            print("코드가 틀렸습니다. 다시 확인해 주세요.")
-            continue;
-        elif(sig == "exit" or sig == "EXIT" or sig == "Exit"):
-            print("프로그램 종료")
-            sys.exit(0)
-        
-        break;
-        
-    print("1. 네이버 금융 뉴스, 2. 네이버 금융 시세, 3. 코스피 지수, 4. 코스닥 지수, 5. 종목정보(GS리테일)")
-    print("URL 연결을 확인합니다. 시그널을 입력해 주세요 : ", end = " ")
-    
+    print("처리 선택 : (0을 입력하면 종료됨.)")
     i = input()
-    
-    fi_main = requests.get(getURL(int(i)))
-    soup = BeautifulSoup(fi_main.content, "html.parser")
 
-    if (int(i) == 1):
-        news = soup.find_all(["a", "href"])
-        n = 0
-        for n in range(n, len(news)):
-            print(news[n].text)
-    elif (int(i) == 2):
-        sise = soup.find_all(["a", "span", "img"])
-        result = []
-        n = 0
-        
-        for n in range(n, len(sise)):
-            if(sise[n].text == "인기 검색 종목"):
-                n += 2
-                flag = n + 30
-                for n in range(n, flag):
-                    result.append(sise[n].text)
-                    
-                break
-                
-        #print(soup)
-        print(result)
-        
-    elif (int(i) == 3):
-        KOSPI = soup.find_all(["a", "span", "img"])
-        n = 0
-        for n in range(n, len(KOSPI)):
-            print(KOSPI[n].text)
-    elif (int(i) == 4):
-        KOSDAQ = soup.find_all(["a", "href"])
-        n = 0
-        for n in range(n, len(KOSDAQ)):
-            print(news[n].text)
-    elif (int(i) == 5):
-        pass
-    elif (int(i) == 6):
-        main = soup.find_all(["a", "href"])
-        n = 0
-        for n in range(n, len(main)):
-            print(main[n].text)
+    if i == '0':
+        exit(0)
+    elif i == '1':
+        res = getURL(1, "005930")       # 삼성전자 정보 페이지를 이용해 테스트
+    elif i == '2':
+        res = getURL(2, "005930")
+    elif i == '3':
+        res = getURL(3, "005930")
+    elif i == '4':
+        res = getURL(4, "005930")
+    elif i == '5':
+        res = getURL(5, "005930")
+    elif i == '6':
+        res = getURL(6, "005930")
+    elif i == '7':
+        res = getURL(7, "005930")
+    elif i == '8':
+        res = getURL(8, "005930")
+    elif i == '9':
+        res = getURL(9, "005930")
+    elif i == '10':
+        res = getURL(10, "005930")
+
+    if res == "CASE_NOT_FOUND":
+        exit(-1)
+
+    tester = URLcrawlingInfoObject(res)
+    if tester.code == "CASE_CONNECT_FAILED":
+        exit(-1)
+
+    data_check = tester.crawlingmainStockInfo(tester.code)   # 딕셔너리 받아옴
+
+    print(type(data_check), len(data_check))
+    print(data_check)
