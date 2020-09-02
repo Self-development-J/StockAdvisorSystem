@@ -10,3 +10,9 @@
 + 사용언어 : python, MySQL
 + 참고 사이트 : [온라인 기업정보](https://navercomp.wisereport.co.kr/)
 + 주요 개발환경 : Windows7 (32bit)
+
+>※ 업데이트 된 날짜 목록
+> 1. 8월 23일 : 최초 등록
+> 2. 8월 25일 : 리소스 추가
+> 3. 8월 28일 : DBSetter 추가, Scrapper 파트 중 main table데이터 크롤링 코드 적용
+> 4. 9월 2일 : GUI 일부 변경. + 리스트의 항목을 불러오는 기능 추가
