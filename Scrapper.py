@@ -17,8 +17,8 @@ class NotFoundExcpetion(Exception):                 # Exception code : CASE_NOT_
                                                     # network connect failure : CASE_CONNECT_FAILED
                                                     #
 #####################################################
-def getURL(sig, code_num):
-    pageNews =          "https://finance.naver.com" + "/news/"
+def getURL(sig, code_num = "005930"):
+    pageNews =          "https://m.stock.naver.com/item/main.nhn#/stocks/" + code_num + "/news" # call to mobile page in newspeed screen
     pageMainPrice =     "https://finance.naver.com/item/sise.nhn?code=" + code_num      # main page
 
     defineAddress =             "https://navercomp.wisereport.co.kr/company/"       # online company info site
@@ -75,15 +75,22 @@ class URLcrawlingInfoObject:                                   # object for craw
             self.code = "CASE_CONNECT_FAILED"                  # when the newtwork connection failed, return use database load signal
 
     # 딕셔너리 형식으로 리턴
-    def crawlingmainStockInfo(self, bs):                       # 메인테이블
-        list_th =           bs.find_all("th", {'class':'title'})
-        list_strong =       bs.find_all("strong", {'class':'tah p11'})
-        list_span =         bs.find_all("span", {'class':'tah p11'})
-        ch = bs.find_all("span", {'class':'blind'})            # 상승, 하락에 따라 처리를 바꿔야 하기에 그에 필요한 구별용 변수 ch를 선언함
-        if ch[22].get_text() == "상승":
-            list_span_01 =  bs.find_all("span", {'class':'tah p11 red01'})
-        elif ch[22].get_text() == "하락":
-            list_span_01 =  bs.find_all("span", {'class':'tah p11 nv01'})
+    def crawlingmainStockInfo(self, bs):                                # 메인테이블
+        list_th =           bs.find_all("th", {'class':'title'})        # 속성명
+        list_strong =       bs.find_all("strong", {'class':'tah p11'})  # 현재가
+        list_span =         bs.find_all("span", {'class':'tah p11'})    # 전일대비, 등락률
+        ch =                bs.find_all("span", {'class':'blind'})      # 상승, 하락에 따라 처리를 바꿔야 하기에 그에 필요한 구별용 변수 ch를 선언함
+
+        for l in ch:
+            if l.get_text() == "상승":
+                list_span_01 =  bs.find_all("span", {'class':'tah p11 red01'})
+                break
+            elif l.get_text() == "하락":
+                list_span_01 =  bs.find_all("span", {'class':'tah p11 nv01'})
+                break
+
+            list_span_01 =  bs.find_all("span", {'class':'tah p11'})    # 보합 처리, 개장전 등의 경우
+
         list_span_t =       bs.find_all("span",{'class':'p11'})
 
         result_th = []                                         # final list
@@ -174,7 +181,7 @@ if __name__ == '__main__':
     elif i == '8':
         res = getURL(8, "005930")
     elif i == '9':
-        res = getURL(9, "005930")
+        res = getURL(9, "190620")
     elif i == '10':
         res = getURL(10, "005930")
 

@@ -8,9 +8,16 @@ import Scrapper, DBSetter
 if "" in sys.path:
     sys.path.remove("")
 
-from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QTableWidget, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QListView, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
 from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices, QCursor, QFont, QStandardItemModel, QStandardItem
+
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+
 from PyQt5.QtCore import *
+
+global ListItem
+ListItem = []
+global head
 
 class frame_main(QWidget):
     ## field area ##
@@ -18,7 +25,7 @@ class frame_main(QWidget):
     font_btn1_n = QFont("나눔바탕", 12)
 
     headStockCode = None
-    ListItem = []
+    global ListItem
 
     def __init__(self):
         super().__init__()
@@ -32,6 +39,9 @@ class frame_main(QWidget):
         self.sel.setFont(self.font_lab_n)
         self.info =     QLabel("종목 정보")
         self.info.setFont(self.font_lab_n)
+
+        self.addLine = QLineEdit(self)
+        self.addLine.move(120, 35)
 
         self.list_s = QListWidget(self)                       # ListView and setting
         self.list_s.resize(300, 500)
@@ -55,6 +65,7 @@ class frame_main(QWidget):
         self.remove_stocks = QPushButton("제거")
         self.remove_stocks.setFont(self.font_btn1_n)
         self.remove_stocks.setIcon(QIcon('.Images/remove.png'))
+        self.remove_stocks.clicked.connect(self.removeStocks)
         self.load_stocks = QPushButton("불러오기")
         self.load_stocks.setFont(self.font_btn1_n)
         self.load_stocks.clicked.connect(self.setTableItem_re)
@@ -69,7 +80,10 @@ class frame_main(QWidget):
         self.window_port = QPushButton("선택 종목 분석")
         self.window_port.setFont(self.font_btn1_n)
         self.window_port.clicked.connect(self.openRelatedarticlesFrame)
-
+        
+        self.frame_Relatedarticles = QDialog(self)          # QDialog list
+        
+        
         # Layout list
         vbox_l_btn = QHBoxLayout()                          # left LayoutBox
         vbox_l_btn.addWidget(self.setter_Stocks)
@@ -103,7 +117,7 @@ class frame_main(QWidget):
         self.setFixedSize(600, 500)
 
     def setListItem(self):                   # 왼쪽 리스트에 Item을 채워넣음
-        for l in self.ListItem:
+        for l in ListItem:
             item = QListWidgetItem(self.list_s)
             item.setText(l.strip())
             self.list_s.addItem(item)
@@ -151,6 +165,7 @@ class frame_main(QWidget):
         self.setTableItem()
 
     def load_initData(self):                 # 설정파일을 불러옴
+        global head
         print("load initData...")
         f = open("data/InitData.txt", 'r', encoding='UTF8')
 
@@ -161,20 +176,52 @@ class frame_main(QWidget):
 
         res = re.findall('\(([^)]+)', striphead)        # 괄호 안의 종목번호 추출
         self.headStockCode = res[0]                     # head로 설정된 종목 정보 세팅
+        head = self.headStockCode
 
         for line in f:
             if line != "list:\n":
                 stripline = line.strip()
-                self.ListItem.append(stripline)
+                ListItem.append(stripline)
 
         f.close()
 
-    def addStocks(self):                     # (미구현) add버튼을 누르면 종목을 추가하는 로직 실행
-        f = open("./data/InitData.txt", "a")
-        f.close()
+    def addStocks(self):                     # add버튼을 누르면 종목을 추가하는 로직 실행
+        text, ok = QInputDialog.getText(self, 'add', "[종목명(종목번호)] 형식으로 입력")
+
+        if ok:
+            f = open("./data/InitData.txt", "a", encoding='utf8')
+            f.write("  "+text)
+
+            item = QListWidgetItem(self.list_s)
+            item.setText(text)
+            self.list_s.addItem(item)
+
+            f.close()
 
     def removeStocks(self):                   # (미구현) remove버튼을 누르면 종목을 제거하는 로직 실행
-        pass
+        # 요구사항
+        # - 파일에서 대상 삭제 후 재정렬해야함
+        # - QListWidget에서 삭제 구현
+        remove_commit = QMessageBox.question(self, 'Message', "삭제하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if remove_commit == QMessageBox.Yes:
+            data_ = self.list_s.currentItem().text()
+            with open("./data/InitData.txt", "r") as f:
+                line = f.readlines()
+            f = open("./data/InitData.txt", "a", encoding='utf8')
+            '''
+            for l in line:
+                if line.strip() == data_:
+                    f.writelines(line)
+                    break
+            '''        
+            f.close()
+            self.list_s.clear()
+            self.load_initData()
+            self.setListItem()
+
+        else:
+            return
 
     # 다이얼로그 오픈 함수
     def openSettingFrame(self):              # 설정창 열기
@@ -195,51 +242,79 @@ class frame_main(QWidget):
             event.ignore()
 
 class frame_setting(QDialog):
-    def __init__(self, mainframe):
-        super(frame_setting, self).__init__(mainframe)
+    global ListItem
+
+    def __init__(self, frame_main):
+        super(frame_setting, self).__init__(frame_main)
         self.initUI()
 
     def initUI(self):
+        self.accept_b = QPushButton("확인")
+        self.cancel_b = QPushButton("취소")
 
         self.op1 = QLabel("로드 파일 설정")
         self.op1.setToolTip("처음 프로그램이 실행되면서 불러올 종목을 지정합니다.")
 
-        self.set1 = QLineEdit()
+        self.set1 = QComboBox(self)
+        self.addset1()
+
+        self.group_normal = QGroupBox("일반 설정")
+
+        hbox = QHBoxLayout()
+        hbox.addWidget(self.op1)
+        hbox.addWidget(self.set1)
+        hbox.addStretch(2)
+
+        hbox_b = QHBoxLayout()
+        hbox_b.addStretch(3)
+        hbox_b.addWidget(self.accept_b)
+        hbox_b.addWidget(self.cancel_b)
+
+        self.group_normal.setLayout(hbox)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(self.op1)
-        vbox.addWidget(self.set1)
+        vbox.addWidget(self.group_normal)
+        vbox.addStretch(3)
+        vbox.addLayout(hbox_b)
 
         self.setLayout(vbox)
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("Setting")
         self.move(300, 300)
         self.setFixedSize(400, 400)
-        self.show()
+        self.exec_()
 
-class frame_MoreInformation(QDialog):
-    def __init__(self, mainframe):
-        super(frame_MoreInformation, self).__init__(mainframe)
+    def addset1(self):
+        for l in ListItem:
+            self.set1.addItem(l)
+
+class frame_MoreInformation(QDialog):                           # 뉴스피드를 띄운다.(웹 브라우저)
+    def __init__(self, frame_main):
+        super(frame_MoreInformation, self).__init__(frame_main)
         self.initUI()
 
     def initUI(self):
+        global head
 
-        vbox = QVBoxLayout()
-
-        self.setLayout(vbox)
+        news = QWebEngineView()
+        news.setUrl(QUrl(Scrapper.getURL(10, head)))
+        
+        form = QBoxLayout(QBoxLayout.LeftToRight, self) 
+        form.addWidget(news)
+        
+        self.setLayout(form)
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("뉴스")
         self.move(300, 300)
-        self.setFixedSize(400, 400)
-        self.show()
+        self.setFixedSize(800, 600)
+        self.exec_()                                    # 다이얼로그 활성화시 메인 창은 비활성화되는 특성을 가지고 있다.
 
-class frame_Relatedarticles(QDialog):
-    def __init__(self, mainframe):
-        super(frame_Relatedarticles, self).__init__(mainframe)
+class frame_Relatedarticles(QDialog):                           # 주식종목 분석을 진행.(GUI최종 파트로 예상됨.)
+    def __init__(self, frame_main):
+        super(frame_Relatedarticles, self).__init__(frame_main)
         self.initUI()
 
     def initUI(self):
-
         vbox = QVBoxLayout()
 
         self.setLayout(vbox)
@@ -248,7 +323,7 @@ class frame_Relatedarticles(QDialog):
         self.setWindowTitle("종목 분석")
         self.move(300, 300)
         self.setFixedSize(400, 400)
-        self.show()
+        self.exec_()
 
 def main():
     app = QApplication(sys.argv)
