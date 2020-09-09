@@ -84,12 +84,15 @@ class URLcrawlingInfoObject:                                   # object for craw
         for l in ch:
             if l.get_text() == "상승":
                 list_span_01 =  bs.find_all("span", {'class':'tah p11 red01'})
+                result_color = "red"
                 break
             elif l.get_text() == "하락":
                 list_span_01 =  bs.find_all("span", {'class':'tah p11 nv01'})
+                result_color = "blue"
                 break
 
             list_span_01 =  bs.find_all("span", {'class':'tah p11'})    # 보합 처리, 개장전 등의 경우
+            result_color = "grey"
 
         list_span_t =       bs.find_all("span",{'class':'p11'})
 
@@ -125,12 +128,13 @@ class URLcrawlingInfoObject:                                   # object for craw
         result_span_01 = list(filter(None, result_span_01))
         result_span = list(filter(None, result_span))
         result_span_t = list(filter(None, result_span_t))
-
+        
         res_dict = {'r1':result_th,
                     'r2':result_strong,
                     'r3':result_span_01,
                     'r4':result_span,
-                    'r5':result_span_t}
+                    'r5':result_span_t,
+                    'r6':result_color}
 
         return res_dict
 

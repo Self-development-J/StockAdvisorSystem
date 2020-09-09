@@ -9,7 +9,7 @@ if "" in sys.path:
     sys.path.remove("")
 
 from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
-from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices, QCursor, QFont, QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices, QCursor, QFont, QStandardItemModel, QStandardItem, QColor, QBrush
 
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -53,10 +53,13 @@ class frame_main(QWidget):
         self.table_info_stock.resize(300, 500)
         self.table_info_stock.setRowCount(24)
         self.table_info_stock.setColumnCount(2)
+        self.table_info_stock.verticalHeader().setVisible(False)
+        self.table_info_stock.horizontalHeader().setVisible(False)
         self.table_info_stock.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # add Item on Table
         self.setTableItem() # 종목 선택할 때 마다 이거 호출하도록 할까?
+        self.setItemColor()
 
         self.setter_Stocks = QPushButton("추가")                 # Buttons list
         self.setter_Stocks.setFont(self.font_btn1_n)
@@ -64,7 +67,7 @@ class frame_main(QWidget):
         self.setter_Stocks.setIcon(QIcon('./Images/add.png'))
         self.remove_stocks = QPushButton("제거")
         self.remove_stocks.setFont(self.font_btn1_n)
-        self.remove_stocks.setIcon(QIcon('.Images/remove.png'))
+        self.remove_stocks.setIcon(QIcon('./Images/remove.png'))
         self.remove_stocks.clicked.connect(self.removeStocks)
         self.load_stocks = QPushButton("불러오기")
         self.load_stocks.setFont(self.font_btn1_n)
@@ -135,6 +138,8 @@ class frame_main(QWidget):
         item_attribute_nv = item['r3']
         item_attribute = item['r4']
         item_attribute_t = item['r5']
+        global setColor
+        setColor = item['r6']
 
         j = 0
         for i in range(0, len(item_title)):
@@ -163,6 +168,18 @@ class frame_main(QWidget):
         res = re.findall('\(([^)]+)', data_)
         self.headStockCode = res[0]
         self.setTableItem()
+        self.setItemColor()
+            
+    def setItemColor(self):
+        if setColor == "red":
+            self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.red))
+            self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.red))
+        elif setColor == "blue":
+            self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.blue))
+            self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.blue))
+        else:
+            self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.gray))
+            self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.gray))
 
     def load_initData(self):                 # 설정파일을 불러옴
         global head
