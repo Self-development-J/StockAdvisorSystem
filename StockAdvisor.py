@@ -10,9 +10,7 @@ if "" in sys.path:
 
 from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
 from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices, QCursor, QFont, QStandardItemModel, QStandardItem, QColor, QBrush
-
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-
 from PyQt5.QtCore import *
 
 global ListItem
@@ -26,30 +24,30 @@ class frame_main(QWidget):
 
     headStockCode = None
     global ListItem
+    #################
 
     def __init__(self):
         super().__init__()
         print("make class...")
-        self.load_initData()    # 파일을 로드
+        self.load_initData()                                    # File load
         self.initUI()
 
     def initUI(self):
         print("make GUI...")
-        self.sel =      QLabel("종목 선택")                 # QLabels list
+        self.sel =      QLabel("종목 선택")                      # QLabels list
         self.sel.setFont(self.font_lab_n)
         self.info =     QLabel("종목 정보")
         self.info.setFont(self.font_lab_n)
 
-        self.addLine = QLineEdit(self)
-        self.addLine.move(120, 35)
+        self.search = QLineEdit(self)                          # QlineEdit list
 
-        self.list_s = QListWidget(self)                       # ListView and setting
+        self.list_s = QListWidget(self)                         # ListView and setting
         self.list_s.resize(300, 500)
         self.list_s.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        # Load saved Data..
-        self.setListItem()
+        
+        self.setListItem()                                      # Load saved Data..
 
-        self.table_info_stock = QTableWidget(self)          # QTableWidget and setting
+        self.table_info_stock = QTableWidget(self)              # QTableWidget and setting
         self.table_info_stock.resize(300, 500)
         self.table_info_stock.setRowCount(24)
         self.table_info_stock.setColumnCount(2)
@@ -58,10 +56,10 @@ class frame_main(QWidget):
         self.table_info_stock.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # add Item on Table
-        self.setTableItem() # 종목 선택할 때 마다 이거 호출하도록 할까?
+        self.setTableItem()                                     # 종목 선택할 때 마다 이거 호출하도록 할까?
         self.setItemColor()
 
-        self.setter_Stocks = QPushButton("추가")                 # Buttons list
+        self.setter_Stocks = QPushButton("추가")                # Buttons list
         self.setter_Stocks.setFont(self.font_btn1_n)
         self.setter_Stocks.clicked.connect(self.addStocks)
         self.setter_Stocks.setIcon(QIcon('./Images/add.png'))
@@ -76,6 +74,8 @@ class frame_main(QWidget):
         self.setting.setFont(self.font_btn1_n)
         self.setting.setIcon(QIcon('./Images/edit.png'))
         self.setting.clicked.connect(self.openSettingFrame)
+        self.search_btn = QPushButton("검색")
+        self.search_btn.setFont(self.font_btn1_n)
 
         self.window_news = QPushButton("관련 기사")
         self.window_news.setFont(self.font_btn1_n)
@@ -84,25 +84,28 @@ class frame_main(QWidget):
         self.window_port.setFont(self.font_btn1_n)
         self.window_port.clicked.connect(self.openRelatedarticlesFrame)
         
-        self.frame_Relatedarticles = QDialog(self)          # QDialog list
-        
+        self.frame_Relatedarticles = QDialog(self)              # QDialog list
         
         # Layout list
-        vbox_l_btn = QHBoxLayout()                          # left LayoutBox
+        vbox_l_btn = QHBoxLayout()                              # left LayoutBox
         vbox_l_btn.addWidget(self.setter_Stocks)
         vbox_l_btn.addWidget(self.remove_stocks)
         vbox_l_btn.addWidget(self.load_stocks)
         vbox_l_btn.addWidget(self.setting)
+        vbox_l_search = QHBoxLayout()
+        vbox_l_search.addWidget(self.search)
+        vbox_l_search.addWidget(self.search_btn)
         vbox_l = QVBoxLayout()
         vbox_l.addWidget(self.sel)
+        vbox_l.addLayout(vbox_l_search)
         vbox_l.addWidget(self.list_s)
         vbox_l.addLayout(vbox_l_btn)
 
-        vbox_r_btn = QHBoxLayout()
+        vbox_r_btn = QHBoxLayout()                              # Right LayoutBox
         vbox_r_btn.addWidget(self.window_news)
         vbox_r_btn.addWidget(self.window_port)
 
-        vbox_r = QVBoxLayout()                              # Right LayoutBox
+        vbox_r = QVBoxLayout()
         vbox_r.addWidget(self.info)
         vbox_r.addWidget(self.table_info_stock)
         vbox_r.addLayout(vbox_r_btn)
@@ -112,25 +115,23 @@ class frame_main(QWidget):
         hbox.addStretch(1)
         hbox.addLayout(vbox_r)
 
-        # extra setting
-        self.setLayout(hbox)
+        self.setLayout(hbox)                                    # extra setting
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("Stock Advisor System")
         self.move(300, 300)
-        self.setFixedSize(600, 500)
+        self.setFixedSize(1000, 800)
 
-    def setListItem(self):                   # 왼쪽 리스트에 Item을 채워넣음
+    def setListItem(self):                                      # 왼쪽 리스트에 Item을 채워넣음
         for l in ListItem:
             item = QListWidgetItem(self.list_s)
             item.setText(l.strip())
             self.list_s.addItem(item)
 
-    def setTableItem(self):                  # 오른쪽 Table에 아이템을 채워넣음
-        # set item of main table
-        send_url = Scrapper.getURL(9, self.headStockCode)
+    def setTableItem(self):                                     # 오른쪽 Table에 아이템을 채워넣음
+        send_url = Scrapper.getURL(9, self.headStockCode)       # set item of main table
         mainSettingObject = Scrapper.URLcrawlingInfoObject(send_url)
         if mainSettingObject.code == "CASE_CONNECT_FAILED":
-            exit(-1)    # 나중에 DB로 전환하는 기능을 만들어야함
+            exit(-1)                                            # 나중에 DB로 전환하는 기능을 만들 예정.
 
         item = mainSettingObject.crawlingmainStockInfo(mainSettingObject.code)
         item_title = item['r1']
@@ -163,7 +164,7 @@ class frame_main(QWidget):
             self.table_info_stock.setItem(0, j, QTableWidgetItem(item_attribute_t[i]))
             j += 2
 
-    def setTableItem_re(self):               # 오른쪽 Table의 아이템을 다른 종목으로 바꿈.
+    def setTableItem_re(self):                                  # 오른쪽 Table의 아이템을 다른 종목으로 바꿈.
         data_ = self.list_s.currentItem().text()
         res = re.findall('\(([^)]+)', data_)
         self.headStockCode = res[0]
@@ -181,7 +182,7 @@ class frame_main(QWidget):
             self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.gray))
             self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.gray))
 
-    def load_initData(self):                 # 설정파일을 불러옴
+    def load_initData(self):                                    # 설정파일을 불러옴
         global head
         print("load initData...")
         f = open("data/InitData.txt", 'r', encoding='UTF8')
@@ -191,8 +192,8 @@ class frame_main(QWidget):
                 striphead = line.strip()
                 break
 
-        res = re.findall('\(([^)]+)', striphead)        # 괄호 안의 종목번호 추출
-        self.headStockCode = res[0]                     # head로 설정된 종목 정보 세팅
+        res = re.findall('\(([^)]+)', striphead)                # 괄호 안의 종목번호 추출
+        self.headStockCode = res[0]                             # head로 설정된 종목 정보 세팅
         head = self.headStockCode
 
         for line in f:
@@ -202,7 +203,7 @@ class frame_main(QWidget):
 
         f.close()
 
-    def addStocks(self):                     # add버튼을 누르면 종목을 추가하는 로직 실행
+    def addStocks(self):                                        # add버튼을 누르면 종목을 추가하는 로직 실행
         text, ok = QInputDialog.getText(self, 'add', "[종목명(종목번호)] 형식으로 입력")
 
         if ok:
@@ -215,7 +216,7 @@ class frame_main(QWidget):
 
             f.close()
 
-    def removeStocks(self):                   # (미구현) remove버튼을 누르면 종목을 제거하는 로직 실행
+    def removeStocks(self):                                     # (미구현) remove버튼을 누르면 종목을 제거하는 로직 실행
         # 요구사항
         # - 파일에서 대상 삭제 후 재정렬해야함
         # - QListWidget에서 삭제 구현
