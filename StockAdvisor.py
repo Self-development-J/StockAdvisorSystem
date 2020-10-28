@@ -4,11 +4,12 @@
 import sys
 import re
 import Scrapper, DBSetter
+import MoreInfo
 
 if "" in sys.path:
     sys.path.remove("")
 
-from PyQt5.QtWidgets import QApplication, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
 from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices, QCursor, QFont, QStandardItemModel, QStandardItem, QColor, QBrush
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import *
@@ -128,6 +129,9 @@ class frame_main(QWidget):
             self.list_s.addItem(item)
 
     def setTableItem(self):                                     # 오른쪽 Table에 아이템을 채워넣음
+        #lm = LoadingMsg() <----- 로딩 창
+        #lm.start()
+
         send_url = Scrapper.getURL(9, self.headStockCode)       # set item of main table
         mainSettingObject = Scrapper.URLcrawlingInfoObject(send_url)
         if mainSettingObject.code == "CASE_CONNECT_FAILED":
@@ -163,6 +167,8 @@ class frame_main(QWidget):
         for i in range(0, len(item_attribute_t)):
             self.table_info_stock.setItem(0, j, QTableWidgetItem(item_attribute_t[i]))
             j += 2
+
+        #lm.flag = True
 
     def setTableItem_re(self):                                  # 오른쪽 Table의 아이템을 다른 종목으로 바꿈.
         data_ = self.list_s.currentItem().text()
@@ -249,7 +255,7 @@ class frame_main(QWidget):
         frame_MoreInformation(self)
 
     def openRelatedarticlesFrame(self):      # 설정창 열기
-        frame_Relatedarticles(self)
+        frame_RelatedarticlesFrame(self)
 
     def closeEvent(self, event):
         cBox = QMessageBox.question(self, 'Message', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -327,28 +333,41 @@ class frame_MoreInformation(QDialog):                           # 뉴스피드�
         self.setFixedSize(800, 600)
         self.exec_()                                    # 다이얼로그 활성화시 메인 창은 비활성화되는 특성을 가지고 있다.
 
-class frame_Relatedarticles(QDialog):                           # 주식종목 분석을 진행.(GUI최종 파트로 예상됨.)
+class frame_RelatedarticlesFrame(QMainWindow, MoreInfo.Ui_MainWindow):  # MoreInfo.py 상속
     def __init__(self, frame_main):
-        super(frame_Relatedarticles, self).__init__(frame_main)
+        super(frame_RelatedarticlesFrame, self).__init__(frame_main)
         self.initUI()
 
     def initUI(self):
+        self.setupUi(self)
+        self.setWindowTitle("종목 상세 분석")
+        self.show()
+
+class LoadingMsg(QThread):
+    def __init__(self, parent=None):
+        QThread.__init__(self)
+        self.cond = QWaitCondition()
+        self.flag = False
+
+    def run(self):
+        l = QDialog()
         vbox = QVBoxLayout()
+        vbox.addWidget(QLabel("불러오는 중입니다..."))
 
-        self.setLayout(vbox)
-        self.setWindowIcon(QIcon('images\SAS.png'))
-        # self.setWindowFlags(self Union[]) @ 언젠가 구현할 다이얼로그 창 물음표 없애닌 코드
-        self.setWindowTitle("종목 분석")
-        self.move(300, 300)
-        self.setFixedSize(400, 400)
-        self.exec_()
-
-def main():
+        l.setLayout(vbox)
+        l.setFixedSize(400, 300)
+        l.setWindowFlag(Qt.WindowMinimizeButtonHint, False)
+        l.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
+        l.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        l.setWindowTitle("불러오는 중")
+        l.setWindowIcon(QIcon('images\SAS.png'))
+        l.exec_()
+        self.sleep(2000)
+        self.terminate()
+                
+if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = frame_main()
     print("create complete.")
     ex.show()
     sys.exit(app.exec_())
-
-if __name__ == '__main__':
-    main()
