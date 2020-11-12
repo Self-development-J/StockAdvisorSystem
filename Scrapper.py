@@ -1,9 +1,5 @@
-#!/usr/bin/env python
 # coding: utf-8
-
-import sys
-import socket
-import time
+import re
 
 import requests
 import json
@@ -11,59 +7,42 @@ import json
 from bs4 import BeautifulSoup
 
 # User custom ExceptionClass list
-# return Exception code
-#####################################################
-class NotFoundExcpetion(Exception):                 # Exception code : CASE_NOT_FOUND
-    def __init__(self):                             #
-        super().__init__("주소를 찾을수 없습니다. ")  #
-                                                    # network connect failure : CASE_CONNECT_FAILED
-                                                    #
-#####################################################
+# custom raise Exception code is here. 
+class WrongItemNumberException(Exception):
+    def __init__(self):
+        super().__init__("종목번호가 잘못되었습니다!")
+        
 
-def getURL(sig, code_num = "005930"):
-    pageNews =          "https://m.stock.naver.com/item/main.nhn#/stocks/" + code_num + "/news" # call to mobile page in newspeed screen
-    pageMainPrice =     "https://finance.naver.com/item/sise.nhn?code=" + code_num      # main page
+def getURL(sig, item_num = "005930"):
 
-    defineAddress =             "https://navercomp.wisereport.co.kr/company/"       # online company info site
-    pageCompanyStatus =         defineAddress + "c1010001.aspx?cmp_cd=" + code_num
-    pageCompanyOverview =       defineAddress + "c1020001.aspx?cmp_cd=" + code_num
-    pageFinancialanalysis =     defineAddress + "c1030001.aspx?cmp_cd=" + code_num
-    pageInvestmentIndicator =   defineAddress + "c1040001.aspx?cmp_cd=" + code_num
-    pageConsensus =             defineAddress + "c1050001.aspx?cmp_cd=" + code_num
-    pageIndustryAnalysis =      defineAddress + "c1060001.aspx?cmp_cd=" + code_num
-    pageSectorAnalysis =        defineAddress + "c1090001.aspx?cmp_cd=" + code_num
-    pageEquitystatus =          defineAddress + "c1070001.aspx?cmp_cd=" + code_num
+    defineAddress = "https://navercomp.wisereport.co.kr/company/"       # online company info site
+    links = {
+        1:defineAddress + "c1010001.aspx?cmp_cd=" + item_num,
+        2:defineAddress + "c1020001.aspx?cmp_cd=" + item_num,
+        3:defineAddress + "c1030001.aspx?cmp_cd=" + item_num,
+        4:defineAddress + "c1040001.aspx?cmp_cd=" + item_num,
+        5:defineAddress + "c1050001.aspx?cmp_cd=" + item_num,
+        6:defineAddress + "c1060001.aspx?cmp_cd=" + item_num,
+        7:defineAddress + "c1090001.aspx?cmp_cd=" + item_num,
+        8:defineAddress + "c1070001.aspx?cmp_cd=" + item_num,
+        9:"https://finance.naver.com/item/sise.nhn?code=" + item_num,               # main page
+        10:"https://m.stock.naver.com/item/main.nhn#/stocks/" + item_num + "/news"  # call to mobile page in newspeed screen
+    }
 
     try:
-        if (sig == 1):
-            return pageCompanyStatus
-        elif (sig == 2):
-            return pageCompanyOverview
-        elif (sig == 3):
-            return pageFinancialanalysis
-        elif (sig == 4):
-            return pageInvestmentIndicator
-        elif (sig == 5):
-            return pageConsensus
-        elif (sig == 6):
-            return pageIndustryAnalysis
-        elif (sig == 7):
-            return pageSectorAnalysis
-        elif (sig == 8):
-            return pageEquitystatus
-        elif (sig == 9):
-            return pageMainPrice
-        elif (sig == 10):
-            return pageNews
+        if sig == 0:
+            exit(0)
         else:
-            raise NotFoundExcpetion
+            return links[sig]
 
-    except NotFoundExcpetion as e:
-        send = "CASE_NOT_FOUND"
-        print("오류 발생.", e)
-        return send
+    except KeyError as e:
+        print("잘못된 매개인자가 전달되었다. 다시 입력." + "(전달된 인자: {})".format(sig))
+        retype = int(input("처리 선택(0을 입력하면 종료됨.) : "))
+        return getURL(retype, item_num)
 
 class URLcrawlingInfoObject:                                   # object for crawling work
+    __resultOfSoup = None                                      # saving result of soup
+
     def __init__(self, url):
         super().__init__()
         self.settingCrawlingModule(url)
@@ -72,17 +51,47 @@ class URLcrawlingInfoObject:                                   # object for craw
         try:
             targetURLCrawl =    requests.get(url, timeout=5)
             soup =              BeautifulSoup(targetURLCrawl.content, "html.parser")
-            self.code =         soup
-        except requests.HTTPError as e:                        # I need to check the connecting network
-            print("오류 발생", e)
-            self.code = "CASE_CONNECT_FAILED"                  # when the newtwork connection failed, return use database load signal
+            check = soup.find_all("title")
+            for i in check:
+                if i.text == "네이버 금융":             # if target site's code number is wrong
+                    raise WrongItemNumberException
+                else:
+                    break
 
-    # 딕셔너리 형식으로 리턴
-    def crawlingmainStockInfo(self, bs):                                # 메인테이블
+            self.__resultOfSoup = soup
+            # targetJson =        targetURLCrawl.json()
+            # print(targetJson)
+        except requests.HTTPError as e:                        # I need to check the connecting network
+            print("해당 사이트의 HTTP에 문제가 있음! 주소를 다시 확인해주기 바람!")
+            exit(-1)
+        except requests.ConnectionError as e1:
+            print(e1)
+            exit(-2)
+        except requests.exceptions.ReadTimeout as e2:
+            print(e2)
+            exit(-3)
+        except WrongItemNumberException as e3:
+            print(e3)
+            exit(-4)
+
+    def getResultOfSoup(self):
+        return self.__resultOfSoup
+
+    # From here on we will use the soup object
+    # return type of dict
+    def crawlingmainStockInfo(self, bs):        # 메인테이블
         list_th =           bs.find_all("th", {'class':'title'})        # 속성명
         list_strong =       bs.find_all("strong", {'class':'tah p11'})  # 현재가
         list_span =         bs.find_all("span", {'class':'tah p11'})    # 전일대비, 등락률
         ch =                bs.find_all("span", {'class':'blind'})      # 상승, 하락에 따라 처리를 바꿔야 하기에 그에 필요한 구별용 변수 ch를 선언함
+        list_span_01 =      None
+        result_color =      None
+
+        result_th =         []                                         # final list
+        result_strong =     []
+        result_span_01 =    []
+        result_span =       []
+        result_span_t =     []
 
         for l in ch:
             if l.get_text() == "상승":
@@ -98,12 +107,6 @@ class URLcrawlingInfoObject:                                   # object for craw
             result_color = "grey"
 
         list_span_t =       bs.find_all("span",{'class':'p11'})         # 시세표 중 52주 최고 ~
-
-        result_th =         []                                         # final list
-        result_strong =     []
-        result_span_01 =    []
-        result_span =       []
-        result_span_t =     []
 
         for i in list_th:                                               # 데이터 추출
             result_th.append(i.get_text().strip())
@@ -126,11 +129,11 @@ class URLcrawlingInfoObject:                                   # object for craw
                 break;
             m += 1
 
-        result_th = list(filter(None, result_th))
-        result_strong = list(filter(None, result_strong))
-        result_span_01 = list(filter(None, result_span_01))
-        result_span = list(filter(None, result_span))
-        result_span_t = list(filter(None, result_span_t))
+        result_th =         list(filter(None, result_th))
+        result_strong =     list(filter(None, result_strong))
+        result_span_01 =    list(filter(None, result_span_01))
+        result_span =       list(filter(None, result_span))
+        result_span_t =     list(filter(None, result_span_t))
         
         res_dict = {'r1':result_th,
                     'r2':result_strong,
@@ -141,64 +144,67 @@ class URLcrawlingInfoObject:                                   # object for craw
 
         return res_dict
 
-    def crawlingCompanyStatus(self, bs):        # 기업현황
+    def crawlingCompanyStatus(self):        # 기업현황
         pass
 
-    def crawlingCompanyOverview(self, bs):      # 기업개요
+    def crawlingCompanyOverview():      # 기업개요
         pass
 
-    def crawlingFinancialanalysis(self, bs):    # 재무분석
+    def crawlingFinancialanalysis(self):    # 재무분석
+        dict_data = []
+        try:
+            with open("target_result.json", "r", encoding="utf-8") as tar:
+                target = json.load(tar)
+                
+            target2 = json.loads(target)
+            js = json.dumps(target, indent="\t")
+
+            i = 0
+            for i in range(len(target2['DATA'])):
+                dict_attribute = {}
+
+                dict_attribute['ACC_NM'] = target2['DATA'][i]['ACC_NM']
+                dict_attribute['DATA1'] = target2['DATA'][i]['DATA1']
+                dict_attribute['DATA2'] = target2['DATA'][i]['DATA2']
+                dict_attribute['DATA3'] = target2['DATA'][i]['DATA3']
+                dict_attribute['DATA4'] = target2['DATA'][i]['DATA4']
+                dict_attribute['DATA5'] = target2['DATA'][i]['DATA5']
+
+                dict_data.append(dict_attribute)
+
+            return dict_data
+
+        except FileNotFoundError as e:
+            print("파일을 찾을 수 없음. 대상파일: {}".format("target_result.json"))
+            exit(-1)
+        finally:
+            pass
+
+    def crawlingInvestmentIndicator():  # 투자지표
         pass
 
-    def crawlingInvestmentIndicator(self, bs):  # 투자지표
+    def crawlingConsensus():            # 컨센서스
         pass
 
-    def crawlingConsensus(self, bs):            # 컨센서스
+    def crawlingIndustryAnalysis():     # 업종분석
         pass
 
-    def crawlingIndustryAnalysis(self, bs):     # 업종분석
+    def crawlingSectorAnalysis():       # 섹터분석
         pass
 
-    def crawlingSectorAnalysis(self, bs):       # 섹터분석
-        pass
-
-    def crawlingEquitystatus(self, bs):         # 지분현황
+    def crawlingEquitystatus():         # 지분현황
         pass
 
 if __name__ == '__main__':
-    print("처리 선택 : (0을 입력하면 종료됨.)")
-    i = input()
 
-    if i == '0':
-        exit(0)
-    elif i == '1':
-        res = getURL(1, "005930")       # 삼성전자 정보 페이지를 이용해 테스트
-    elif i == '2':
-        res = getURL(2, "005930")
-    elif i == '3':
-        res = getURL(3, "005930")
-    elif i == '4':
-        res = getURL(4, "005930")
-    elif i == '5':
-        res = getURL(5, "005930")
-    elif i == '6':
-        res = getURL(6, "005930")
-    elif i == '7':
-        res = getURL(7, "005930")
-    elif i == '8':
-        res = getURL(8, "005930")
-    elif i == '9':
-        res = getURL(9, "001260")
-    elif i == '10':
-        res = getURL(10, "005930")
-
-    if res == "CASE_NOT_FOUND":
-        exit(-1)
+    i = int(input("처리 선택(0을 입력하면 종료됨.) : "))
+    res = getURL(i, "005930")       # 삼성전자 정보 페이지를 이용해 테스트.
+    print(res)
+    print(type(res))
 
     tester = URLcrawlingInfoObject(res)
-    if tester.code == "CASE_CONNECT_FAILED":
-        exit(-1)
 
-    data_check = tester.crawlingmainStockInfo(tester.code)   # 딕셔너리 받아옴
+    data_check = tester.crawlingmainStockInfo(tester.getResultOfSoup())   # 딕셔너리 받아옴
 
+    tester.crawlingFinancialanalysis()
     print(data_check)

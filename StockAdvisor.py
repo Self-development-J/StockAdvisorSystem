@@ -1,8 +1,8 @@
 # coding: utf-8
-# version: 0.01a
+# version: 0.10a
 
-import sys
-import re
+import sys, time, re
+
 import Scrapper, DBSetter
 import MoreInfo
 
@@ -27,8 +27,8 @@ class frame_main(QWidget):
     global ListItem
     #################
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         print("make class...")
         self.load_initData()                                    # File load
         self.initUI()
@@ -131,13 +131,10 @@ class frame_main(QWidget):
     def setTableItem(self):                                     # 오른쪽 Table에 아이템을 채워넣음
         #lm = LoadingMsg() <----- 로딩 창
         #lm.start()
-
         send_url = Scrapper.getURL(9, self.headStockCode)       # set item of main table
         mainSettingObject = Scrapper.URLcrawlingInfoObject(send_url)
-        if mainSettingObject.code == "CASE_CONNECT_FAILED":
-            exit(-1)                                            # 나중에 DB로 전환하는 기능을 만들 예정.
 
-        item = mainSettingObject.crawlingmainStockInfo(mainSettingObject.code)
+        item = mainSettingObject.crawlingmainStockInfo(mainSettingObject.getResultOfSoup())
         item_title = item['r1']
         item_attribute_comp_previousday = item['r2']
         item_attribute_nv = item['r3']
@@ -171,12 +168,15 @@ class frame_main(QWidget):
         #lm.flag = True
 
     def setTableItem_re(self):                                  # 오른쪽 Table의 아이템을 다른 종목으로 바꿈.
-        data_ = self.list_s.currentItem().text()
-        res = re.findall('\(([^)]+)', data_)
-        self.headStockCode = res[0]
-        self.setTableItem()
-        self.setItemColor()
-            
+        try:
+            data_ = self.list_s.currentItem().text()
+            res = re.findall('\(([^)]+)', data_)
+            self.headStockCode = res[0]
+            self.setTableItem()
+            self.setItemColor()
+        except AttributeError:
+            QMessageBox.warning(self, 'Warning', "종목을 선택해 주세요!", QMessageBox.Ok)
+                    
     def setItemColor(self):
         if setColor == "red":
             self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.red))
@@ -190,6 +190,8 @@ class frame_main(QWidget):
 
     def load_initData(self):                                    # 설정파일을 불러옴
         global head
+        striphead = None
+
         print("load initData...")
         f = open("data/InitData.txt", 'r', encoding='UTF8')
 
@@ -268,8 +270,8 @@ class frame_main(QWidget):
 class frame_setting(QDialog):
     global ListItem
 
-    def __init__(self, frame_main):
-        super(frame_setting, self).__init__(frame_main)
+    def __init__(self, parent=frame_main):
+        super(frame_setting, self).__init__(parent)
         self.initUI()
 
     def initUI(self):
@@ -302,6 +304,7 @@ class frame_setting(QDialog):
         vbox.addLayout(hbox_b)
 
         self.setLayout(vbox)
+        self.setWindowFlags(self.windowFlags() ^ Qt.WindowStaysOnTopHint)   # ^ : XOR 연산자
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("Setting")
         self.move(300, 300)
@@ -313,8 +316,8 @@ class frame_setting(QDialog):
             self.set1.addItem(l)
 
 class frame_MoreInformation(QDialog):                           # 뉴스피드를 띄운다.(웹 브라우저)
-    def __init__(self, frame_main):
-        super(frame_MoreInformation, self).__init__(frame_main)
+    def __init__(self, parent=frame_main):
+        super(frame_MoreInformation, self).__init__(parent)
         self.initUI()
 
     def initUI(self):
@@ -327,25 +330,52 @@ class frame_MoreInformation(QDialog):                           # 뉴스피드�
         form.addWidget(news)
         
         self.setLayout(form)
+        self.setWindowFlags(self.windowFlags() ^ Qt.WindowStaysOnTopHint)
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("뉴스")
         self.move(300, 300)
         self.setFixedSize(800, 600)
-        self.exec_()                                    # 다이얼로그 활성화시 메인 창은 비활성화되는 특성을 가지고 있다.
+        self.exec_()                                                    # 다이얼로그 활성화시 메인 창은 비활성화되는 특성을 가지고 있다.
 
 class frame_RelatedarticlesFrame(QMainWindow, MoreInfo.Ui_MainWindow):  # MoreInfo.py 상속
-    def __init__(self, frame_main):
-        super(frame_RelatedarticlesFrame, self).__init__(frame_main)
+    def __init__(self, parent=frame_main):
+        super(frame_RelatedarticlesFrame, self).__init__(parent)
         self.initUI()
 
     def initUI(self):
         self.setupUi(self)
+        self.tableSetting()
+
+        
+
         self.setWindowTitle("종목 상세 분석")
         self.show()
 
+    def tableSetting(self):                                             # Table widget setting here
+        # setting Horizontal's time result
+        time_horizontal = {
+            'Year-0':time.strftime('%Y', time.localtime(time.time())) + "/12\n(IFRS연결)",
+            'Year-1':time.strftime('%Y', time.localtime(time.time()-31536000.0)) + "/12\n(IFRS연결)",
+            'Year-2':time.strftime('%Y', time.localtime(time.time()-63072000.0)) + "/12\n(IFRS연결)",
+            'Year-3':time.strftime('%Y', time.localtime(time.time()-94608000.0)) + "/12\n(IFRS연결)",
+            'Year-4':time.strftime('%Y', time.localtime(time.time()-126144000.0)) + "/12\n(IFRS연결)"
+        }
+        self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        self.tableWidget.setHorizontalHeaderItem(0, QTableWidgetItem(time_horizontal['Year-4']))
+        self.tableWidget.setHorizontalHeaderItem(1, QTableWidgetItem(time_horizontal['Year-3']))
+        self.tableWidget.setHorizontalHeaderItem(2, QTableWidgetItem(time_horizontal['Year-2']))
+        self.tableWidget.setHorizontalHeaderItem(3, QTableWidgetItem(time_horizontal['Year-1']))
+        self.tableWidget.setHorizontalHeaderItem(4, QTableWidgetItem(time_horizontal['Year-0']))
+        
+        # Now setting table's attribute
+        # 포괄손익계산서, 재무상태표, 현금흐름표 등
+        catch_resultOfTable = Scrapper.URLcrawlingInfoObject.crawlingFinancialanalysis(self)
+        print(catch_resultOfTable)
+
 class LoadingMsg(QThread):
     def __init__(self, parent=None):
-        QThread.__init__(self)
+        QThread.__init__(parent)
         self.cond = QWaitCondition()
         self.flag = False
 

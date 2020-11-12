@@ -34,7 +34,7 @@ class Ui_MainWindow(object):
         self.tableWidget.setGeometry(QtCore.QRect(10, 10, 475, 358))
         self.tableWidget.setMouseTracking(False)
         self.tableWidget.setAcceptDrops(False)
-        self.tableWidget.setObjectName("tableWidget")
+        self.tableWidget.setObjectName("financeInfoTable")
         self.tableWidget.setColumnCount(4)
         self.tableWidget.setRowCount(13)
         item = QtWidgets.QTableWidgetItem()
