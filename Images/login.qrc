@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="titlePic">
+    <file>frontImage.jpg</file>
+  </qresource>
+</RCC>

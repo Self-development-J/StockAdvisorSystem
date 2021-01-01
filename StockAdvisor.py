@@ -1,18 +1,15 @@
 # coding: utf-8
 # version: 0.10a
-
 import sys, time, re
 
-import Scrapper, DBSetter
-import MoreInfo
-
+import Scrapper, MoreInfo
 if "" in sys.path:
     sys.path.remove("")
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
-from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices, QCursor, QFont, QStandardItemModel, QStandardItem, QColor, QBrush
+from PyQt5.QtGui import QIcon, QFont, QBrush
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import *
+from PyQt5 import QtCore
 
 global ListItem
 ListItem = []
@@ -29,12 +26,17 @@ class frame_main(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        print("make class...")
+
+        loading = LoadingMsg()                                  # <----- 로딩 창
+        loading.start()
+
         self.load_initData()                                    # File load
         self.initUI()
 
+        print("create complete.")
+        loading.loadEvents = True
+
     def initUI(self):
-        print("make GUI...")
         self.sel =      QLabel("종목 선택")                      # QLabels list
         self.sel.setFont(self.font_lab_n)
         self.info =     QLabel("종목 정보")
@@ -57,8 +59,9 @@ class frame_main(QWidget):
         self.table_info_stock.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
         # add Item on Table
-        self.setTableItem()                                     # 종목 선택할 때 마다 이거 호출하도록 할까?
+        self.setTableItem()
         self.setItemColor()
+        self.info.setText("종목 정보: {}".format("head"))  # head로 초기화 - 나중에 수정할 것.
 
         self.setter_Stocks = QPushButton("추가")                # Buttons list
         self.setter_Stocks.setFont(self.font_btn1_n)
@@ -129,10 +132,8 @@ class frame_main(QWidget):
             self.list_s.addItem(item)
 
     def setTableItem(self):                                     # 오른쪽 Table에 아이템을 채워넣음
-        #lm = LoadingMsg() <----- 로딩 창
-        #lm.start()
         send_url = Scrapper.getURL(9, self.headStockCode)       # set item of main table
-        mainSettingObject = Scrapper.URLcrawlingInfoObject(send_url)
+        mainSettingObject = Scrapper.Scrap(send_url)
 
         item = mainSettingObject.crawlingmainStockInfo(mainSettingObject.getResultOfSoup())
         item_title = item['r1']
@@ -165,7 +166,10 @@ class frame_main(QWidget):
             self.table_info_stock.setItem(0, j, QTableWidgetItem(item_attribute_t[i]))
             j += 2
 
-        #lm.flag = True
+        try:
+            self.info.setText("종목 정보: {}".format(self.list_s.currentItem().text()))
+        except Exception as e:
+            pass
 
     def setTableItem_re(self):                                  # 오른쪽 Table의 아이템을 다른 종목으로 바꿈.
         try:
@@ -179,20 +183,19 @@ class frame_main(QWidget):
                     
     def setItemColor(self):
         if setColor == "red":
-            self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.red))
-            self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.red))
+            self.table_info_stock.item(1, 1).setForeground(QBrush(QtCore.Qt.red))
+            self.table_info_stock.item(2, 1).setForeground(QBrush(QtCore.Qt.red))
         elif setColor == "blue":
-            self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.blue))
-            self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.blue))
+            self.table_info_stock.item(1, 1).setForeground(QBrush(QtCore.Qt.blue))
+            self.table_info_stock.item(2, 1).setForeground(QBrush(QtCore.Qt.blue))
         else:
-            self.table_info_stock.item(1, 1).setForeground(QBrush(Qt.gray))
-            self.table_info_stock.item(2, 1).setForeground(QBrush(Qt.gray))
+            self.table_info_stock.item(1, 1).setForeground(QBrush(QtCore.Qt.gray))
+            self.table_info_stock.item(2, 1).setForeground(QBrush(QtCore.Qt.gray))
 
     def load_initData(self):                                    # 설정파일을 불러옴
         global head
         striphead = None
 
-        print("load initData...")
         f = open("data/InitData.txt", 'r', encoding='UTF8')
 
         for line in f:
@@ -208,7 +211,6 @@ class frame_main(QWidget):
             if line != "list:\n":
                 stripline = line.strip()
                 ListItem.append(stripline)
-
         f.close()
 
     def addStocks(self):                                        # add버튼을 누르면 종목을 추가하는 로직 실행
@@ -304,7 +306,7 @@ class frame_setting(QDialog):
         vbox.addLayout(hbox_b)
 
         self.setLayout(vbox)
-        self.setWindowFlags(self.windowFlags() ^ Qt.WindowStaysOnTopHint)   # ^ : XOR 연산자
+        self.setWindowFlags(self.windowFlags() ^ QtCore.Qt.WindowStaysOnTopHint)   # ^ : XOR 연산자
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("Setting")
         self.move(300, 300)
@@ -324,13 +326,13 @@ class frame_MoreInformation(QDialog):                           # 뉴스피드�
         global head
 
         news = QWebEngineView()
-        news.setUrl(QUrl(Scrapper.getURL(10, head)))
+        news.setUrl(QtCore.QUrl(Scrapper.getURL(10, head)))
         
         form = QBoxLayout(QBoxLayout.LeftToRight, self) 
         form.addWidget(news)
         
         self.setLayout(form)
-        self.setWindowFlags(self.windowFlags() ^ Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(self.windowFlags() ^ QtCore.Qt.WindowStaysOnTopHint)
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("뉴스")
         self.move(300, 300)
@@ -345,9 +347,6 @@ class frame_RelatedarticlesFrame(QMainWindow, MoreInfo.Ui_MainWindow):  # MoreIn
     def initUI(self):
         self.setupUi(self)
         self.tableSetting()
-
-        
-
         self.setWindowTitle("종목 상세 분석")
         self.show()
 
@@ -358,46 +357,64 @@ class frame_RelatedarticlesFrame(QMainWindow, MoreInfo.Ui_MainWindow):  # MoreIn
             'Year-1':time.strftime('%Y', time.localtime(time.time()-31536000.0)) + "/12\n(IFRS연결)",
             'Year-2':time.strftime('%Y', time.localtime(time.time()-63072000.0)) + "/12\n(IFRS연결)",
             'Year-3':time.strftime('%Y', time.localtime(time.time()-94608000.0)) + "/12\n(IFRS연결)",
-            'Year-4':time.strftime('%Y', time.localtime(time.time()-126144000.0)) + "/12\n(IFRS연결)"
+            'Year-4':time.strftime('%Y', time.localtime(time.time()-126144000.0)) + "/12[E]\n(IFRS연결)"
         }
         self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
-
         self.tableWidget.setHorizontalHeaderItem(0, QTableWidgetItem(time_horizontal['Year-4']))
         self.tableWidget.setHorizontalHeaderItem(1, QTableWidgetItem(time_horizontal['Year-3']))
         self.tableWidget.setHorizontalHeaderItem(2, QTableWidgetItem(time_horizontal['Year-2']))
         self.tableWidget.setHorizontalHeaderItem(3, QTableWidgetItem(time_horizontal['Year-1']))
         self.tableWidget.setHorizontalHeaderItem(4, QTableWidgetItem(time_horizontal['Year-0']))
-        
+
+        self.tableWidget_2.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tableWidget_2.setHorizontalHeaderItem(0, QTableWidgetItem(time_horizontal['Year-4']))
+        self.tableWidget_2.setHorizontalHeaderItem(1, QTableWidgetItem(time_horizontal['Year-3']))
+        self.tableWidget_2.setHorizontalHeaderItem(2, QTableWidgetItem(time_horizontal['Year-2']))
+        self.tableWidget_2.setHorizontalHeaderItem(3, QTableWidgetItem(time_horizontal['Year-1']))
+        self.tableWidget_2.setHorizontalHeaderItem(4, QTableWidgetItem(time_horizontal['Year-0']))
+
+        self.tableWidget_3.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tableWidget_3.setHorizontalHeaderItem(0, QTableWidgetItem(time_horizontal['Year-4']))
+        self.tableWidget_3.setHorizontalHeaderItem(1, QTableWidgetItem(time_horizontal['Year-3']))
+        self.tableWidget_3.setHorizontalHeaderItem(2, QTableWidgetItem(time_horizontal['Year-2']))
+        self.tableWidget_3.setHorizontalHeaderItem(3, QTableWidgetItem(time_horizontal['Year-1']))
+        self.tableWidget_3.setHorizontalHeaderItem(4, QTableWidgetItem(time_horizontal['Year-0']))
         # Now setting table's attribute
         # 포괄손익계산서, 재무상태표, 현금흐름표 등
-        catch_resultOfTable = Scrapper.URLcrawlingInfoObject.crawlingFinancialanalysis(self)
-        print(catch_resultOfTable)
+        try:
+            catch_resultOfTable = Scrapper.Scrap.crawlingFinancialanalysis(self)
 
-class LoadingMsg(QThread):
-    def __init__(self, parent=None):
-        QThread.__init__(parent)
-        self.cond = QWaitCondition()
-        self.flag = False
+            for i in range(len(catch_resultOfTable)):
+                print(catch_resultOfTable[i])
+        except Exception as e:
+            print(e)
+
+class LoadingMsg(QtCore.QThread):       # loading screen dialog
+    loadEvents = False
 
     def run(self):
-        l = QDialog()
-        vbox = QVBoxLayout()
-        vbox.addWidget(QLabel("불러오는 중입니다..."))
+        # l = QMessageBox()
+        # l.setFixedSize(400, 300)
+        # l.setWindowTitle("불러오는 중")
+        # l.setWindowIcon(QIcon('images\SAS.png'))
+        # l.show()
 
-        l.setLayout(vbox)
-        l.setFixedSize(400, 300)
-        l.setWindowFlag(Qt.WindowMinimizeButtonHint, False)
-        l.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
-        l.setWindowFlag(Qt.WindowCloseButtonHint, False)
-        l.setWindowTitle("불러오는 중")
-        l.setWindowIcon(QIcon('images\SAS.png'))
-        l.exec_()
-        self.sleep(2000)
-        self.terminate()
+        print("loading", end="")
+        while self.loadEvents != True:
+            print(".", end="")
+            self.sleep(1)
+            
+        # vbox = QVBoxLayout()
+        # vbox.addWidget(QLabel("불러오는 중입니다..."))
+
+        # l.setLayout(vbox)
+            
+        # self.sleep(2000)
+        # self.terminate()
                 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = frame_main()
-    print("create complete.")
+    
     ex.show()
     sys.exit(app.exec_())

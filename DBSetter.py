@@ -1,5 +1,6 @@
 import sys
 import pymysql
+from pymysql import Connection
 #####################################################
 # 미완성 모듈입니다! 아직 사용할 수 없어요
 #####################################################
@@ -67,8 +68,8 @@ def set_Stocks(DBConnetion, cursor, list):        # 인수로 넘겨받은 DB의
     Upper_limit, Full-time_upper_limit, Lower_limit, Full-time_lower_limit, PER, EPS, 52-week_high, 52_weeks_min,
     Market_cap, Number_of_listed_shares, Foreigners, Capital) VALUES('기아차','42750','550')'''.format(table=get_NameOftable(5)))
 
-    DBConnection.commit()   #
-    DBConnection.close()
+    Connection.commit()   #
+    Connection.close()
 
 if __name__ == '__main__':
 

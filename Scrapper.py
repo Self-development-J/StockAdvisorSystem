@@ -40,14 +40,14 @@ def getURL(sig, item_num = "005930"):
         retype = int(input("처리 선택(0을 입력하면 종료됨.) : "))
         return getURL(retype, item_num)
 
-class URLcrawlingInfoObject:                                   # object for crawling work
+class Scrap:                                   # object for crawling work
     __resultOfSoup = None                                      # saving result of soup
 
     def __init__(self, url):
         super().__init__()
-        self.settingCrawlingModule(url)
+        self.requestData(url)
 
-    def settingCrawlingModule(self, url):                      # create soup object here
+    def requestData(self, url):                      # create soup object here
         try:
             targetURLCrawl =    requests.get(url, timeout=5)
             soup =              BeautifulSoup(targetURLCrawl.content, "html.parser")
@@ -177,8 +177,6 @@ class URLcrawlingInfoObject:                                   # object for craw
         except FileNotFoundError as e:
             print("파일을 찾을 수 없음. 대상파일: {}".format("target_result.json"))
             exit(-1)
-        finally:
-            pass
 
     def crawlingInvestmentIndicator():  # 투자지표
         pass
@@ -202,7 +200,7 @@ if __name__ == '__main__':
     print(res)
     print(type(res))
 
-    tester = URLcrawlingInfoObject(res)
+    tester = Scrap(res)
 
     data_check = tester.crawlingmainStockInfo(tester.getResultOfSoup())   # 딕셔너리 받아옴
 
