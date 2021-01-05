@@ -1,50 +1,54 @@
-import sys
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication
+import sys, threading
+
+from PyQt5.QtGui import QCloseEvent, QIcon
+from PyQt5.QtWidgets import QMessageBox, QWidget, QApplication
 from PyQt5.QAxContainer import QAxWidget
 
-from StockAdvisor import frame_main
+from StockAdvisor import MainWindow
+from GUI.Login import Ui_loginFrame
 
-class LoginWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("PyStock")
-        self.setGeometry(300, 300, 300, 150)
-        self.setWindowIcon(QIcon('images\SAS.png'))
+class LoginWindow(QWidget, Ui_loginFrame):
+    connect = None
+
+    def __init__(self, parent=None):
+        super(LoginWindow, self).__init__(None)
+        self.setupUi(self)
+        self.setWindowIcon(QIcon("./Images/favicon.png"))
+        self.setFixedSize(self.size())
+
         try:
-            self.kiwoom = QAxWidget("KHOPENAPI.KHOpenAPICtrl.1")
+            self.connect = QAxWidget("KHOPENAPI.KHOpenAPICtrl.1")
+            self.connect.OnEventConnect.connect(self.connectEvent)
         except Exception as e:
             e.with_traceback()
 
-        btn1 = QPushButton("Login", self)
-        btn1.move(20, 20)
-        btn1.clicked.connect(self.btn1_clicked)
+        self.loginBtn.clicked.connect(self.loginClicked)
+        self.exitBtn.clicked.connect(self.exitClicked)
 
-        btn2 = QPushButton("Check state", self)
-        btn2.move(20, 70)
-        btn2.clicked.connect(self.btn2_clicked)
+    def loginClicked(self):
+        self.connect.dynamicCall("CommConnect()")
 
-    def btn1_clicked(self):
-        ret = self.kiwoom.dynamicCall("CommConnect()")
-        if self.kiwoom.dynamicCall("GetConnectState()") == 0:
-            self.hide()
-            ap = frame_main()
-            ap.show()
+    def exitClicked(self):
+        self.closeEvent(QCloseEvent())
 
-    def btn2_clicked(self):
-        if self.kiwoom.dynamicCall("GetConnectState()") == 0:
-            self.statusBar().showMessage("Not connected")
-        elif self.kiwoom.dynamicCall("GetConnectState()") == 1:
-            self.statusBar().showMessage("Connected")
-            # self.hide()
-            # ap = frame_main()
-            # ap.show()
+    def connectEvent(self, err_code):
+        if err_code == 0:
+            mainWindow = MainWindow(self)
+            MainWindow.connect = self.connect
+            mainWindow.show()
         else:
-            print("오류!")
-            exit(-1)
+            print(err_code)
+
+    # close event 처리
+    def closeEvent(self, closeEvent=QCloseEvent()):
+        wantExit = QMessageBox.question(self, '종료?', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if wantExit == QMessageBox.Yes:
+            exit(0)
+        elif wantExit == QMessageBox.No:
+            closeEvent.ignore()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    myWindow = LoginWindow()
-    myWindow.show()
-    app.exec_()
+    loginWindow = LoginWindow()
+    loginWindow.show()
+    sys.exit(app.exec_())
