@@ -120,7 +120,7 @@ class frame_main(QWidget):
         self.setWindowIcon(QIcon('images\SAS.png'))
         self.setWindowTitle("Stock Advisor System")
         self.move(300, 300)
-        self.setFixedSize(1000, 800)
+        self.setFixedSize(self.size())
 
     def setListItem(self):                                      # 왼쪽 리스트에 Item을 채워넣음
         for l in ListItem:
