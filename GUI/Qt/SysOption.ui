@@ -16,10 +16,10 @@
   <widget class="QWidget" name="verticalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>20</y>
-     <width>351</width>
-     <height>261</height>
+     <x>10</x>
+     <y>10</y>
+     <width>381</width>
+     <height>281</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -33,8 +33,8 @@
         <rect>
          <x>0</x>
          <y>120</y>
-         <width>349</width>
-         <height>112</height>
+         <width>371</width>
+         <height>121</height>
         </rect>
        </property>
        <property name="title">
@@ -46,7 +46,7 @@
           <x>10</x>
           <y>20</y>
           <width>331</width>
-          <height>80</height>
+          <height>89</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -60,6 +60,19 @@
             </widget>
            </item>
            <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
             <widget class="QPushButton" name="checkBtn">
              <property name="text">
               <string>확인</string>
@@ -67,7 +80,7 @@
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer">
+            <spacer name="horizontalSpacer_3">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -87,6 +100,13 @@
             <widget class="QPushButton" name="infoAPI">
              <property name="text">
               <string>API 정보..</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="infoUsr">
+             <property name="text">
+              <string>사용자 정보..</string>
              </property>
             </widget>
            </item>
