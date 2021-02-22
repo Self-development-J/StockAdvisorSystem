@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1920</width>
-    <height>1080</height>
+    <width>1080</width>
+    <height>930</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -38,37 +38,15 @@
    <widget class="QWidget" name="gridLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>1921</width>
-      <height>1031</height>
+      <x>10</x>
+      <y>10</y>
+      <width>1061</width>
+      <height>871</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="1">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>TextLabel</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="font">
-        <font>
-         <family>나눔고딕</family>
-         <pointsize>12</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string notr="true">상세정보 항목</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="0">
-      <widget class="QTabWidget" name="ShowTab">
+      <widget class="QTabWidget" name="stat_tab">
        <property name="enabled">
         <bool>true</bool>
        </property>
@@ -78,11 +56,11 @@
        <property name="elideMode">
         <enum>Qt::ElideNone</enum>
        </property>
-       <widget class="QWidget" name="tab">
+       <widget class="QWidget" name="tab_comprehensive_income_statement">
         <attribute name="title">
          <string>포괄손익계산서</string>
         </attribute>
-        <widget class="QTableWidget" name="tableWidget">
+        <widget class="QTableWidget" name="table_comprehensive_income_statement">
          <property name="enabled">
           <bool>true</bool>
          </property>
@@ -90,8 +68,8 @@
           <rect>
            <x>10</x>
            <y>10</y>
-           <width>1400</width>
-           <height>800</height>
+           <width>771</width>
+           <height>781</height>
           </rect>
          </property>
          <property name="mouseTracking">
@@ -102,6 +80,12 @@
          </property>
          <property name="editTriggers">
           <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="sortingEnabled">
+          <bool>false</bool>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
          <attribute name="horizontalHeaderVisible">
           <bool>true</bool>
@@ -296,17 +280,17 @@
          </column>
         </widget>
        </widget>
-       <widget class="QWidget" name="tab_3">
+       <widget class="QWidget" name="tab_financial_statement">
         <attribute name="title">
          <string>재무상태표</string>
         </attribute>
-        <widget class="QTableWidget" name="tableWidget_2">
+        <widget class="QTableWidget" name="table_financial_statement">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>10</y>
-           <width>1400</width>
-           <height>800</height>
+           <width>771</width>
+           <height>781</height>
           </rect>
          </property>
          <property name="editTriggers">
@@ -764,16 +748,16 @@
          </column>
         </widget>
        </widget>
-       <widget class="QWidget" name="tab_2">
+       <widget class="QWidget" name="tab_cash_flow_statement">
         <attribute name="title">
          <string>현금흐름표</string>
         </attribute>
-        <widget class="QTableWidget" name="tableWidget_3">
+        <widget class="QTableWidget" name="table_cash_flow_statement">
          <property name="geometry">
           <rect>
            <x>10</x>
            <y>10</y>
-           <width>1400</width>
+           <width>771</width>
            <height>800</height>
           </rect>
          </property>
@@ -1019,6 +1003,101 @@
        </widget>
       </widget>
      </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="more_info">
+       <property name="font">
+        <font>
+         <family>나눔고딕</family>
+         <pointsize>24</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string notr="true">상세정보 항목</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QRadioButton" name="year_stat">
+         <property name="text">
+          <string>연간</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="month_stat">
+         <property name="text">
+          <string>분기</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="type_fi_stat">
+         <item>
+          <property name="text">
+           <string>주재무제표</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>K-IFRS(별도)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>K-IFRS(연결)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>K-GAAP(별도)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>K-GAAP(연결)</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="search">
+         <property name="text">
+          <string>검색</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="rating">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>재무상태 평가</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTextEdit" name="memo">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -1027,24 +1106,31 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1920</width>
+     <width>1080</width>
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="menu_help">
     <property name="title">
      <string>도움말</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menu_2">
+   <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>파일</string>
     </property>
+    <addaction name="actionSave"/>
+    <addaction name="separator"/>
    </widget>
-   <addaction name="menu_2"/>
-   <addaction name="menu"/>
+   <addaction name="menu_file"/>
+   <addaction name="menu_help"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

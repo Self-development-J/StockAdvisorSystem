@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="enabled">
    <bool>true</bool>
   </property>
@@ -9,7 +12,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
+    <width>850</width>
     <height>600</height>
    </rect>
   </property>
@@ -20,31 +23,378 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>거래 창</string>
   </property>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
      <x>9</x>
      <y>9</y>
-     <width>681</width>
+     <width>831</width>
      <height>581</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QLabel" name="test">
-      <property name="font">
-       <font>
-        <pointsize>24</pointsize>
-        <italic>true</italic>
-        <underline>true</underline>
-       </font>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
       </property>
-      <property name="text">
-       <string>준비중!</string>
-      </property>
-     </widget>
+      <item>
+       <widget class="QLabel" name="holding_stock">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>보유 주식 목록</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="account_box">
+        <property name="editable">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTableWidget" name="holding_list">
+        <property name="autoScroll">
+         <bool>true</bool>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="showGrid">
+         <bool>true</bool>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="rowCount">
+         <number>20</number>
+        </property>
+        <property name="columnCount">
+         <number>12</number>
+        </property>
+        <attribute name="horizontalHeaderVisible">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="horizontalHeaderCascadingSectionResizes">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderHighlightSections">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <column>
+         <property name="text">
+          <string>종목명</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>평가손익</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>수익률(%)</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>보유수량</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>매입가</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>현재가</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>매입금액</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>평가금액</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>매입수수료</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>평가수수료</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>수수료합</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>세금</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QPushButton" name="sell_all_stock">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>보유 주식 일괄매도</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="lookup_market">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>현재 장 조회</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="test_btn">
+          <property name="text">
+           <string>삼전 1주 사보자!</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QLabel" name="acc_info">
+        <property name="text">
+         <string>현재계좌 상세정보</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="dep">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>예수금</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="dep_res">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="withdraw">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>출금가능금액</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="withdraw_res">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QLabel" name="order">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>주문가능금액</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="order_res">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <item>
+         <widget class="QLabel" name="cash">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>현금미수금</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="cash_res">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QLabel" name="total">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>미수금합계</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="total_res">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="buy_sell_activities">
+        <property name="text">
+         <string>매수/매도 활동 목록</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTextEdit" name="buy_sell_list">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>150</width>
+          <height>150</height>
+         </size>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

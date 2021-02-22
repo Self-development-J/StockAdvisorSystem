@@ -1,58 +1,73 @@
 # coding: utf-8
 # version: 0.10a
 
-import sys
+import sys, re
 
 from PyQt5.QtWidgets import QAction, QApplication, QWidget, QDialog, QTableWidget, QBoxLayout, QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QMessageBox, QGroupBox, QLabel, QLineEdit, QPushButton, QComboBox, QVBoxLayout, QInputDialog, QHBoxLayout
-from PyQt5.QtGui import QCloseEvent, QIcon, QFont
+from PyQt5.QtGui import QBrush, QCloseEvent, QColor, QIcon, QFont
 from PyQt5 import QtCore
 from PyQt5.QAxContainer import QAxWidget
 from PyQt5 import uic
 
 from Info import InfoWindow
 from Trade import TradeWindow
+from Modules.Background.Tray import SystemTrayIcon
 
+# load .ui file
 opt_class = uic.loadUiType("GUI/Qt/SysOption.ui")[0]
 
 class OptionDialog(QDialog, opt_class):
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, connect=None):
         super(OptionDialog, self).__init__(parent)
         self.setModal(True)
         self.setupUi(self)
+
+        self.connect = connect
 
         self.checkBtn.clicked.connect(self.checkConnectionEvent)
         self.buttonBox.accepted.connect(self.accept) 
         self.buttonBox.rejected.connect(self.reject) 
         self.infoUsr.clicked.connect(self.loadLoginUserInfoEvent)
-    # 현재 이부분을 사용하기 위한 버튼이 준비가 안됨!
+
     def loadLoginUserInfoEvent(self):
-        res = []
         try:
-            res.append(MainWindow.connect.dynamicCall("GetLoginInfo(ACCLIST)"))
-            res.append(MainWindow.connect.dynamicCall("GetLoginInfo(USER_NAME)"))
-            res.append(MainWindow.connect.dynamicCall("GetLoginInfo(USER_ID)"))
-            res.append(MainWindow.connect.dynamicCall("GetLoginInfo(GetServerGubun)"))
-            print(res)
+            info = QDialog()
+
+            acclist =       QLabel("ACCList: "+self.connect.dynamicCall("GetLoginInfo(ACCLIST)"))
+            user_name =     QLabel("사용자 이름: "+self.connect.dynamicCall("GetLoginInfo(USER_NAME)"))
+            user_ID =       QLabel("사용자 ID: "+self.connect.dynamicCall("GetLoginInfo(USER_ID)"))
+            server =        QLabel("현재 접속중인 서버: "+self.connect.dynamicCall("GetLoginInfo(GetServerGubun)"))
+            account_num =   QLabel("계좌번호: "+self.connect.dynamicCall("GetLoginInfo(QString)", ["ACCNO"]))
+
+            vbox = QVBoxLayout()
+            vbox.addWidget(acclist)
+            vbox.addWidget(user_name)
+            vbox.addWidget(user_ID)
+            vbox.addWidget(server)
+            vbox.addWidget(account_num)
+
+            info.setLayout(vbox)
+            info.setWindowTitle("사용자 정보")
+            info.setWindowModality(QtCore.Qt.ApplicationModal)
+            info.resize(300, 200)
+            info.exec_()
+            
         except AttributeError as e:
             print(e.args)
             self.connectServer()
-    
-    def btn1_clicked(self): # 접속된 사용자의 계좌 정보를 가져오는 함수(현재 미사용)
-        account_num = self.kiwoom.dynamicCall("GetLoginInfo(QString)", ["ACCNO"])
-        self.text_edit.append("계좌번호: " + account_num.rstrip(';'))
 
     def connectServer(self):
         msg = QMessageBox.information(self, '알림', "서버에 연결되어 있지 않습니다. 연결하시겠습니까?", QMessageBox.Yes|QMessageBox.No)
         if msg == QMessageBox.Yes:
-            MainWindow.connect = QAxWidget("KHOPENAPI.KHOpenAPICtrl.1")
-            MainWindow.connect.dynamicCall("CommConnect()")
+            self.connect = QAxWidget("KHOPENAPI.KHOpenAPICtrl.1")
+            self.connect.dynamicCall("CommConnect()")
         elif msg == QMessageBox.No:
             return
 
     def checkConnectionEvent(self):
         try:
-            res = MainWindow.connect.dynamicCall("GetConnectState()")
+            res = self.connect.dynamicCall("GetConnectState()")
             if res == 1:
                 msg = QMessageBox.information(self, '알림', "서버에 연결되어 있습니다.", QMessageBox.Ok)
                 if msg == QMessageBox.Ok:
@@ -68,10 +83,15 @@ class MainWindow(QWidget):
     stock_now = None
     stock_now_code = None
 
+    # 키움증권 API 
     connect = None
+
+    # 트레이아이콘 
+    tray = None
+
     # fonts
-    font_lab_n = QFont("나눔고딕", 10)
-    font_btn1_n = QFont("나눔바탕", 12)
+    font_lab_n =    QFont("나눔고딕", 10)
+    font_btn1_n =   QFont("나눔바탕", 12)
 
     __ListItem = []
 
@@ -83,6 +103,10 @@ class MainWindow(QWidget):
         self.load_init_data()
 
     def initUI(self):
+        # call Tray Icon
+        self.tray = SystemTrayIcon(QIcon('C:/Users/chess/Documents/projects/StockAdvisorSystem/Images/favicon.png'), self)
+        self.tray.show()
+
         # QAction list
         # 1) common
         viewAction = QAction("종목 조회", self)     # 2) FavoriteList
@@ -152,14 +176,14 @@ class MainWindow(QWidget):
         self.remove_stocks.clicked.connect(self.remove_favorite_event)
         self.load_stocks = QPushButton("종목 조회")
         self.load_stocks.setFont(self.font_btn1_n)
-        self.load_stocks.clicked.connect(self.remove_favorite_event)
+        self.load_stocks.clicked.connect(self.load_favorite_event)
         self.setting = QPushButton("설정..")
         self.setting.setFont(self.font_btn1_n)
         self.setting.setIcon(QIcon('./Images/edit.png'))
         self.setting.clicked.connect(self.option_event)
         self.search_btn = QPushButton("검색")
         self.search_btn.setFont(self.font_btn1_n)
-        self.search_btn.clicked.connect(self.searchEvent)
+        self.search_btn.clicked.connect(self.search_event)
         self.window_trade = QPushButton("주식 거래")
         self.window_trade.setFont(self.font_btn1_n)
         self.window_trade.clicked.connect(self.trade_event)
@@ -203,14 +227,12 @@ class MainWindow(QWidget):
         self.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         self.move(300, 300)
         self.setFixedSize(self.size())
-
+        
     #Events
     def closeEvent(self, closeEvent=QCloseEvent()):             # window close event
-        wantExit = QMessageBox.question(self, '종료?', "프로그램을 종료하시겠습니까?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if wantExit == QMessageBox.Yes:
-            exit(0)
-        elif wantExit == QMessageBox.No:
-            closeEvent.ignore()
+        self.hide()
+        self.tray.showMessage("작동 중", "StockAdvisorSystem을 종료해도 트레이아이콘으로 남아있게 됩니다.\n완전한 종료를 원하신다면 아이콘 우클릭 > 종료 버튼을 눌러주세요.", 1, 50)
+        closeEvent.ignore()
 
     def add_favorite_event(self):                                    # add버튼을 누르면 종목을 추가하는 로직 실행
         text, ok = QInputDialog.getText(self, 'add', "종목번호를 입력")
@@ -275,13 +297,33 @@ class MainWindow(QWidget):
         except AttributeError as e:
             QMessageBox.warning(self, 'Warning', "종목을 선택해 주세요!", QMessageBox.Ok)
 
-    def searchEvent(self):
+    def load_favorite_event(self):
+        try:
+            # 괄호 안의 종목번호 추출
+            name = self.list_s.currentItem().text()
+            res = re.findall('\(([^)]+)', name)
+
+            try:
+                # OpenAPI+ Search Event
+                self.connect.OnReceiveTrData.connect(self.recieveData)
+            except AttributeError as e:
+                QMessageBox.warning(self, 'Warning', "API 서버에 연결되어있지 않습니다. 설정>서버 연결 확인 버튼을 눌러 서버에 연결해 주세요.", QMessageBox.Ok)
+                return
+
+            # SetInputValue
+            self.connect.dynamicCall("SetInputValue(QString, QString)", "종목코드", res)
+
+            # CommRqData
+            self.connect.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
+        except AttributeError as e:
+            QMessageBox.warning(self, 'Warning', "종목을 선택해 주세요!", QMessageBox.Ok)
+
+    def search_event(self):
         if self.search.text() == "" or self.search.text() == None:
             QMessageBox.warning(self, 'Warning', "검색어를 입력해 주세요!", QMessageBox.Ok)
             return
 
         name = self.search.text()
-
         try:
             # OpenAPI+ Search Event
             self.connect.OnReceiveTrData.connect(self.recieveData)
@@ -330,59 +372,56 @@ class MainWindow(QWidget):
             return
 
         if rqname == "opt10001_req":
-            name =              self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "종목명")
-            code =              self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "종목코드")
-            market_price =      self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "시가")
-            high_price =        self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "고가")
-            low_price =         self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "저가")
-            volume =            self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "거래량")
-            preparation =       self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "거래대비")
-            upper_limit =       self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "상한가")
-            lower_limit =       self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "하한가")
-            center_limit =      self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "기준가")
-            price =             self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "현재가")
-            prev_per =          self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "전일대비")
-            face_value =        self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "액면가")
-            high_year =         self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "연중최고")
-            low_year =          self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "연중최저")
-            rate =              self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "등락율")
-            roe =               self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "ROE")
-            per =               self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "PER")
-            pbr =               self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "PBR")
-            ev =                self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "EV")
-            bps =               self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "BPS")
-            market_cap =        self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "시가총액")
-            listed_shares =     self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "상장주식수")
-            foreigner_per =     self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "외인소진률")
-            capital =           self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "자본금")
+            result = []
 
-            self.stock_now =        name.strip()
-            self.stock_now_code =   code.strip()
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "종목명"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "종목코드"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "시가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "고가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "저가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "거래량"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "거래대비"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "상한가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "하한가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "기준가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "현재가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "전일대비"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "액면가"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "연중최고"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "연중최저"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "등락율"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "ROE"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "PER"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "PBR"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "EV"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "BPS"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "시가총액"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "상장주식수"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "외인소진률"))
+            result.append(self.connect.dynamicCall("CommGetData(QString, QString, QString, int, QString)", trcode, "", rqname, 0, "자본금"))
+
+            self.stock_now =        result[0].strip()
+            self.stock_now_code =   result[1].strip()
             self.info.setText("종목 정보("+self.stock_now+"("+self.stock_now_code+")"+")")
 
-            self.table_info_stock.setItem(0, 1, QTableWidgetItem(market_price.strip()))
-            self.table_info_stock.setItem(1, 1, QTableWidgetItem(high_price.strip()))
-            self.table_info_stock.setItem(2, 1, QTableWidgetItem(low_price.strip()))
-            self.table_info_stock.setItem(3, 1, QTableWidgetItem(volume.strip()))
-            self.table_info_stock.setItem(4, 1, QTableWidgetItem(preparation.strip()))
-            self.table_info_stock.setItem(5, 1, QTableWidgetItem(upper_limit.strip()))
-            self.table_info_stock.setItem(6, 1, QTableWidgetItem(lower_limit.strip()))
-            self.table_info_stock.setItem(7, 1, QTableWidgetItem(center_limit.strip()))
-            self.table_info_stock.setItem(8, 1, QTableWidgetItem(price.strip()))
-            self.table_info_stock.setItem(9, 1, QTableWidgetItem(prev_per.strip()))
-            self.table_info_stock.setItem(10, 1, QTableWidgetItem(face_value.strip()))
-            self.table_info_stock.setItem(11, 1, QTableWidgetItem(high_year.strip()))
-            self.table_info_stock.setItem(12, 1, QTableWidgetItem(low_year.strip()))
-            self.table_info_stock.setItem(13, 1, QTableWidgetItem(rate.strip()))
-            self.table_info_stock.setItem(14, 1, QTableWidgetItem(roe.strip()))
-            self.table_info_stock.setItem(15, 1, QTableWidgetItem(per.strip()))
-            self.table_info_stock.setItem(16, 1, QTableWidgetItem(pbr.strip()))
-            self.table_info_stock.setItem(17, 1, QTableWidgetItem(ev.strip()))
-            self.table_info_stock.setItem(18, 1, QTableWidgetItem(bps.strip()))
-            self.table_info_stock.setItem(19, 1, QTableWidgetItem(market_cap.strip()))
-            self.table_info_stock.setItem(20, 1, QTableWidgetItem(listed_shares.strip()))
-            self.table_info_stock.setItem(21, 1, QTableWidgetItem(foreigner_per.strip()))
-            self.table_info_stock.setItem(22, 1, QTableWidgetItem(capital.strip()))
+            setting = []
+
+            for j in range(2, len(result)):
+                if '+' in result[j]:
+                    tmp = QTableWidgetItem("▲"+result[j].strip().lstrip("+").lstrip("0"))
+                    tmp.setForeground(QBrush(QColor(255, 0, 0)))
+                    setting.append(tmp)
+                elif '-' in result[j]:
+                    tmp = QTableWidgetItem("▼"+result[j].strip().lstrip("-").lstrip("0"))
+                    tmp.setForeground(QBrush(QColor(0, 0, 255)))
+                    setting.append(tmp)
+                else:
+                    tmp = QTableWidgetItem(result[j].strip().lstrip("+").lstrip("-").lstrip("0"))
+                    tmp.setForeground(QBrush(QColor(0, 0, 0)))
+                    setting.append(tmp)
+
+            for k in range(0, len(setting)):
+                self.table_info_stock.setItem(k, 1, QTableWidgetItem(setting[k]))
 
     def search_favorite_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         if err_code == None:
@@ -397,15 +436,15 @@ class MainWindow(QWidget):
             self.stock_now_code =   res_code.strip()
 
     def option_event(self):
-        optionDlog = OptionDialog(self)
+        optionDlog = OptionDialog(self, self.connect)
         optionDlog.show()
 
     def trade_event(self):
-        trade = TradeWindow(self)
+        trade = TradeWindow(self, connect=self.connect, tray=self.tray)
         trade.show()
 
     def more_info_event(self):
-        info = InfoWindow(self)
+        info = InfoWindow(self, code=self.stock_now)
         info.show()
 
     #initialize method
@@ -421,7 +460,7 @@ class MainWindow(QWidget):
     def event_connect(self, err_code):
         if err_code == 0:
             print("로그인 성공")
-
+            self.tray.showMessage("로그인", "StockAdvisor가 서버에 로그인 했습니다.", 1, 10000)
 
     def load_init_data(self):                                    # 설정파일을 불러옴
         # 1. load list in left window
@@ -435,8 +474,6 @@ class MainWindow(QWidget):
             item.setText(l.strip())
             self.list_s.addItem(item)
         # 2. etc..
-
-        # res = re.findall('\(([^)]+)', striphead)            # 괄호 안의 종목번호 추출
 
     # Getter and Setter
 
