@@ -2,9 +2,11 @@
 # coding: utf-8
 
 import sys
-import requests
 import socket
 import time
+
+import requests
+import json
 
 from bs4 import BeautifulSoup
 
@@ -17,6 +19,7 @@ class NotFoundExcpetion(Exception):                 # Exception code : CASE_NOT_
                                                     # network connect failure : CASE_CONNECT_FAILED
                                                     #
 #####################################################
+
 def getURL(sig, code_num = "005930"):
     pageNews =          "https://m.stock.naver.com/item/main.nhn#/stocks/" + code_num + "/news" # call to mobile page in newspeed screen
     pageMainPrice =     "https://finance.naver.com/item/sise.nhn?code=" + code_num      # main page
@@ -69,7 +72,7 @@ class URLcrawlingInfoObject:                                   # object for craw
         try:
             targetURLCrawl =    requests.get(url, timeout=5)
             soup =              BeautifulSoup(targetURLCrawl.content, "html.parser")
-            self.code = soup
+            self.code =         soup
         except requests.HTTPError as e:                        # I need to check the connecting network
             print("오류 발생", e)
             self.code = "CASE_CONNECT_FAILED"                  # when the newtwork connection failed, return use database load signal
@@ -84,31 +87,34 @@ class URLcrawlingInfoObject:                                   # object for craw
         for l in ch:
             if l.get_text() == "상승":
                 list_span_01 =  bs.find_all("span", {'class':'tah p11 red01'})
+                result_color = "red"
                 break
             elif l.get_text() == "하락":
                 list_span_01 =  bs.find_all("span", {'class':'tah p11 nv01'})
+                result_color = "blue"
                 break
 
             list_span_01 =  bs.find_all("span", {'class':'tah p11'})    # 보합 처리, 개장전 등의 경우
+            result_color = "grey"
 
-        list_span_t =       bs.find_all("span",{'class':'p11'})
+        list_span_t =       bs.find_all("span",{'class':'p11'})         # 시세표 중 52주 최고 ~
 
-        result_th = []                                         # final list
-        result_strong = []
-        result_span_01 = []
-        result_span = []
-        result_span_t = []
+        result_th =         []                                         # final list
+        result_strong =     []
+        result_span_01 =    []
+        result_span =       []
+        result_span_t =     []
 
-        for i in list_th:                                      # 데이터 추출
+        for i in list_th:                                               # 데이터 추출
             result_th.append(i.get_text().strip())
 
         for j in list_strong:
             result_strong.append(j.get_text().strip())
 
-        for k in list_span_01:
+        for k in list_span_01:                                          
             result_span_01.append(k.get_text().strip())
-            if len(result_span_01) == 2:  # 인덱스[1] 뒤의 값들을 쓸 일이 없기 때문에 리스트에 포함시키지 않음
-                break;
+            if len(result_span_01) == 2:                                # 인덱스[1] 뒤의 값들을 쓸 일이 없기 때문에 리스트에 포함시키지 않음
+                break
 
         for l in list_span:
             result_span.append(l.get_text().strip())
@@ -125,12 +131,13 @@ class URLcrawlingInfoObject:                                   # object for craw
         result_span_01 = list(filter(None, result_span_01))
         result_span = list(filter(None, result_span))
         result_span_t = list(filter(None, result_span_t))
-
+        
         res_dict = {'r1':result_th,
                     'r2':result_strong,
                     'r3':result_span_01,
                     'r4':result_span,
-                    'r5':result_span_t}
+                    'r5':result_span_t,
+                    'r6':result_color}
 
         return res_dict
 
@@ -181,7 +188,7 @@ if __name__ == '__main__':
     elif i == '8':
         res = getURL(8, "005930")
     elif i == '9':
-        res = getURL(9, "190620")
+        res = getURL(9, "001260")
     elif i == '10':
         res = getURL(10, "005930")
 
@@ -194,5 +201,4 @@ if __name__ == '__main__':
 
     data_check = tester.crawlingmainStockInfo(tester.code)   # 딕셔너리 받아옴
 
-    print(type(data_check), len(data_check))
     print(data_check)

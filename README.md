@@ -1,6 +1,7 @@
 # StockAdvisorSystem
 
 ![](https://github.com/code243031/StockAdvisorSystem/blob/tester/Images/stockmain.jpg) 
+=======
 
 &nbsp;&nbsp;본 프로그램은 주식 중개소로 운영되는, HTML로 작성된 사이트를 위주로 크롤링 기법을 적용하여 얻은 주가정보, 제무재표, 차트, 투자의견 등을 종합하여 기술적 지표를 도출해 궁극적으로 사용자의 투자 판단에 도움을 주는 조언들과 포트폴리오를 만들어 내는데 목적을 두는 프로그램을 설계한다.
 
